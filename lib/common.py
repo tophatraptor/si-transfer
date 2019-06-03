@@ -3,6 +3,7 @@ import time
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 HYPERPARAMS = {
@@ -99,23 +100,34 @@ HYPERPARAMS = {
 
 
 def unpack_batch(batch):
-    states, actions, rewards, dones, last_states = [], [], [], [], []
+    """
+    Added an array for the environment names
+    """
+    states, actions, rewards, dones, last_states, envs = [], [], [], [], [], []
     for exp in batch:
         state = np.array(exp.state, copy=False)
         states.append(state)
         actions.append(exp.action)
         rewards.append(exp.reward)
         dones.append(exp.last_state is None)
+        if hasattr(exp, 'env'):
+            envs.append(exp.env)
         if exp.last_state is None:
             last_states.append(state)       # the result will be masked anyway
         else:
             last_states.append(np.array(exp.last_state, copy=False))
+
+
     return np.array(states, copy=False), np.array(actions), np.array(rewards, dtype=np.float32), \
-           np.array(dones, dtype=np.uint8), np.array(last_states, copy=False)
+       np.array(dones, dtype=np.uint8), np.array(last_states, copy=False), np.array(envs)
+
 
 
 def calc_loss_dqn(batch, net, tgt_net, gamma, cuda=False, cuda_async=False, cuda_id=0):
-    states, actions, rewards, dones, next_states = unpack_batch(batch)
+    """
+    Added array for env name
+    """
+    states, actions, rewards, dones, next_states, envs = unpack_batch(batch)
 
     states_v = torch.tensor(states)
     next_states_v = torch.tensor(next_states)
@@ -136,6 +148,43 @@ def calc_loss_dqn(batch, net, tgt_net, gamma, cuda=False, cuda_async=False, cuda
 
     expected_state_action_values = next_state_values.detach() * gamma + rewards_v
     return nn.MSELoss()(state_action_values, expected_state_action_values)
+
+
+def calc_loss_actormimic(batch, net, name_to_expert, beta, cuda=False, cuda_async=False, cuda_id=0):
+    """
+    Don't get the loss from the standard target network. Instead, get it by comparing output to two expert nets.
+    Therefore we only need the state frame stack
+
+    name_to_expert: dict mapping name of env that will be seen in the experience_AM tuples to the expert model.
+    """
+    states, actions, rewards, dones, next_states, envs = unpack_batch(batch)
+
+    total_loss = 0
+
+    for env_name in name_to_expert.keys():
+        expert_model, expert_model_hidden = name_to_expert[env_name]
+
+        states_v = torch.tensor(states[envs == env_name])
+        if cuda:
+            device = torch.device("cuda:{}".format(cuda_id))
+            states_v = states_v.cuda(device=device, non_blocking=cuda_async)
+
+        with torch.no_grad():
+            expert_Q_softmax = F.softmax(expert_model(states_v), dim=1)
+            expert_hidden = expert_model_hidden(states_v)
+
+        learner_Q, learner_hidden = net(states_v, hidden_bool=True)
+        learner_Q_softmax = F.softmax(learner_Q, dim=1)
+
+        # Pytorch's Cross Entropy Loss takes in a class id as the target, which we don't want
+        #this_loss = ( expert_Q_softmax * learner_Q_log_softmax).sum()
+
+        this_loss = nn.MSELoss()(learner_Q_softmax, expert_Q_softmax) + beta*nn.MSELoss()(learner_hidden, expert_hidden)
+
+        total_loss += this_loss
+
+    print(total_loss)
+    return total_loss
 
 
 class RewardTracker:
