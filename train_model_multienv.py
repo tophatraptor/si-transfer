@@ -20,18 +20,26 @@ import os
 PLAY_STEPS = 4
 
 
-def play_func(envs, params, net, cuda, exp_queue, device_id):
+def play_func(params, net, cuda, exp_queue, device_id):
     """
-    envs - either a single env or a list of envs. With multiple envs, the exp_source class will return experiences
+    With multiple envs, the exp_source class will return experiences
     (defined as a tuple of (state_framestack, action, reward, last_state_framestack) alternating between
     the two environments. Otherwise it returns just experinces from a single env. Even if the games have different
     frame shapes, they will by reduced to 84x84
+
+    *** There is a reason that it reinitializes the envs in this function that has to do with parallelization ***
     """
     run_name = 'demon_invaders'
     if 'max_games' not in params:
         max_games = 16000
     else:
         max_games = params['max_games']
+
+    envSI = gym.make('SpaceInvadersNoFrameskip-v4')
+    envSI = ptan.common.wrappers.wrap_dqn(envSI)
+
+    envDA = gym.make('DemonAttackNoFrameskip-v4')
+    envDA = ptan.common.wrappers.wrap_dqn(envDA)
 
     device = torch.device("cuda:{}".format(device_id) if cuda else "cpu")
 
@@ -45,7 +53,7 @@ def play_func(envs, params, net, cuda, exp_queue, device_id):
     selector = ptan.actions.EpsilonGreedyActionSelector(epsilon=params['epsilon_start'])
     epsilon_tracker = common.EpsilonTracker(selector, params)
     agent = ptan.agent.DQNAgent(net, selector, device=device)
-    exp_source = ptan.experience.ExperienceSourceFirstLast(envs, agent, gamma=params['gamma'], steps_count=1)
+    exp_source = ptan.experience.ExperienceSourceFirstLast([envSI, envDA], agent, gamma=params['gamma'], steps_count=1)
     exp_source_iter = iter(exp_source)
 
     fh = open('models/{}_metadata.csv'.format(run_name), 'w')
@@ -134,14 +142,20 @@ if __name__ == "__main__":
     assert envSI.action_space.n == envDA.action_space.n, "Different Action Space Lengths"
     assert envSI.observation_space.shape == envDA.observation_space.shape, "Different Obs. Space Shapes"
 
+    print("Loaded Environments: {}l {}".format(envSI.unwrapped.spec.id, envDA.unwrapped.spec.id))
+
     net = dqn_model.DQN(envSI.observation_space.shape, envSI.action_space.n).to(device)
     tgt_net = ptan.agent.TargetNet(net)
+
+    # After instantiating the model shape, we actually don't need these envs (will be recreated in the parallel function)
+    del envSI
+    del envDA
 
     buffer = ptan.experience.ExperienceReplayBuffer(experience_source=None, buffer_size=params['replay_size'])
     optimizer = optim.Adam(net.parameters(), lr=params['learning_rate'])
 
     exp_queue = mp.Queue(maxsize=PLAY_STEPS * 2)
-    play_proc = mp.Process(target=play_func, args=([envSI,envDA], params, net, args.cuda, exp_queue, cuda_id))
+    play_proc = mp.Process(target=play_func, args=(params, net, args.cuda, exp_queue, cuda_id))
     play_proc.start()
 
     frame_idx = 0
