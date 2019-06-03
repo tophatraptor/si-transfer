@@ -52,7 +52,7 @@ HYPERPARAMS = {
         'env_name': "SpaceInvadersNoFrameskip-v4",
         'stop_reward': 500.0,
         'run_name': 'invaders',
-        'replay_size': 10 ** 6,
+        'replay_size': 3 * 10**5,
         'replay_initial': 50000,
         'target_net_sync': 10000,
         'epsilon_frames': 10 ** 6,
@@ -67,7 +67,7 @@ HYPERPARAMS = {
         'env_name':         "AssaultNoFrameskip-v4",
         'stop_reward':      500.0,
         'run_name':         'assault',
-        'replay_size':      10 ** 6,
+        'replay_size':      3 * 10 ** 5,
         'replay_initial':   50000,
         'target_net_sync':  10000,
         'epsilon_frames':   10 ** 6,
@@ -76,13 +76,14 @@ HYPERPARAMS = {
         'learning_rate':    0.00025,
         'gamma':            0.99,
         'batch_size':       32,
-        'max_games': 16000
+        'max_games': 100000,
+        'save_iter': 1000,
     },
     'demon-attack': {
         'env_name':         "DemonAttackNoFrameskip-v4",
         'stop_reward':      500.0,
         'run_name':         'demon-attack',
-        'replay_size':      10 ** 6,
+        'replay_size':      3 * 10 ** 5,
         'replay_initial':   50000,
         'target_net_sync':  10000,
         'epsilon_frames':   10 ** 6,
@@ -91,7 +92,8 @@ HYPERPARAMS = {
         'learning_rate':    0.00025,
         'gamma':            0.99,
         'batch_size':       32,
-        'max_games': 16000
+        'max_games': 100000,
+        'save_iter': 1000,
     }
 }
 

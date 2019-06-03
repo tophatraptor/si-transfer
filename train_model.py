@@ -31,6 +31,11 @@ def play_func(params, net, cuda, exp_queue, device_id):
     env = ptan.common.wrappers.wrap_dqn(env)
     device = torch.device("cuda:{}".format(device_id) if cuda else "cpu")
 
+    if 'save_iter' not in params:
+        save_iter = 500
+    else:
+        save_iter = params['save_iter']
+
     writer = SummaryWriter(comment="-" + params['run_name'] + "-03_parallel")
 
     selector = ptan.actions.EpsilonGreedyActionSelector(epsilon=params['epsilon_start'])
@@ -47,6 +52,7 @@ def play_func(params, net, cuda, exp_queue, device_id):
     model_count = 0
     model_stats = []
     mean_rewards = []
+    best_reward = 0
     with common.RewardTracker(writer, params['stop_reward']) as reward_tracker:
         while True:
             frame_idx += 1
@@ -60,16 +66,16 @@ def play_func(params, net, cuda, exp_queue, device_id):
                 mean_rewards.append(mean_reward)
                 if status:
                     break
-                if game_idx and (game_idx % 500 == 0):
+                if game_idx and (game_idx % save_iter == 0):
                     # write to disk
-                    print("Saving model...")
-                    model_name = 'models/{}_{}.pth'.format(run_name, game_idx)
-                    net.to(torch.device('cpu'))
-                    torch.save(net, model_name)
-                    net.to(device)
-                    new_row = [model_name, num_games, mean_reward, epsilon_str]
-                    out_csv.writerow(new_row)
                     np.savetxt('models/{}_reward.txt'.format(run_name), np.array(mean_rewards))
+                    if mean_reward > best_reward:
+                        print("Saving model...")
+                        model_name = 'models/{}_{}.pth'.format(run_name, game_idx)
+                        torch.save(net, model_name)
+                        new_row = [model_name, num_games, mean_reward, epsilon_str]
+                        out_csv.writerow(new_row)
+                        best_reward = mean_reward
                 if game_idx == max_games:
                     break
                 game_idx += 1
@@ -144,7 +150,7 @@ if __name__ == "__main__":
 
         if len(buffer) < params['replay_initial']:
             continue
-        # print("UPDATING GRAD")
+        
         optimizer.zero_grad()
         batch = buffer.sample(params['batch_size'])
         loss_v = common.calc_loss_dqn(batch, net, tgt_net.target_model, gamma=params['gamma'], cuda=args.cuda, cuda_async=True, cuda_id=cuda_id)

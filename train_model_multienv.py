@@ -35,6 +35,11 @@ def play_func(envs, params, net, cuda, exp_queue, device_id):
 
     device = torch.device("cuda:{}".format(device_id) if cuda else "cpu")
 
+    if 'save_iter' not in params:
+        save_iter = 500
+    else:
+        save_iter = params['save_iter']
+
     writer = SummaryWriter(comment="-" + run_name + "-03_parallel")
 
     selector = ptan.actions.EpsilonGreedyActionSelector(epsilon=params['epsilon_start'])
@@ -64,28 +69,28 @@ def play_func(envs, params, net, cuda, exp_queue, device_id):
                 mean_rewards.append(mean_reward)
                 if status:
                     break
-                if game_idx and (game_idx % 500 == 0):
+                if game_idx and (game_idx % save_iter == 0):
                     # write to disk
                     print("Saving model...")
-                    model_name = 'models/{}_{}.pth'.format(run_name, game_idx)
+                    model_name = 'models/multi_{}_{}_{}.pth'.format(run_name, params['secondary'], game_idx)
                     net.to(torch.device('cpu'))
                     torch.save(net, model_name)
                     net.to(device)
                     new_row = [model_name, num_games, mean_reward, epsilon_str]
                     out_csv.writerow(new_row)
-                    np.savetxt('models/{}_reward.txt'.format(run_name), np.array(mean_rewards))
+                    np.savetxt('models/multi_{}_{}_reward.txt'.format(run_name, params['secondary']), np.array(mean_rewards))
                 if game_idx == max_games:
                     break
                 game_idx += 1
 
     print("Saving final model...")
-    model_name = 'models/{}_{}.pth'.format(run_name, game_idx)
+    model_name = 'models/multi_{}_{}_{}.pth'.format(run_name, params['secondary'], game_idx)
     net.to(torch.device('cpu'))
     torch.save(net, model_name)
     net.to(device)
     new_row = [model_name, num_games, mean_reward, epsilon_str]
     out_csv.writerow(new_row)
-    np.savetxt('models/{}_reward.txt'.format(run_name), np.array(mean_rewards))
+    np.savetxt('models/multi_{}_{}_reward.txt'.format(run_name, params['secondary']), np.array(mean_rewards))
     # plt.figure(figsize=(16, 9))
     # plt.tight_layout()
     # plt.title('Reward vs time, {}'.format(run_name))
@@ -110,6 +115,7 @@ if __name__ == "__main__":
     cuda_id = args.cuda_id
 
     params = common.HYPERPARAMS['invaders']
+    params['secondary'] = 'demon-attack'
 
     params['batch_size'] *= PLAY_STEPS
     device_str = "cuda:{}".format(cuda_id) if args.cuda else "cpu"
