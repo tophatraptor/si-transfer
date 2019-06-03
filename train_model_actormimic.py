@@ -4,6 +4,7 @@ import ptan
 import argparse
 
 import torch
+from torch import nn
 import torch.optim as optim
 import torch.multiprocessing as mp
 
@@ -284,6 +285,7 @@ if __name__ == "__main__":
     parser.add_argument("--cuda_id", default=0, help="CUDA ID of device")
     parser.add_argument("--si", help="Path to space invaders master model", required=True)
     parser.add_argument('--da', help='Paths to demon attack master model', required=True)
+    parser.add_argument('--beta', help='Balance of Policy vs Hidden Loss', default=1)
     args = parser.parse_args()
     cuda_id = args.cuda_id
     params = common.HYPERPARAMS['invaders']
@@ -306,22 +308,22 @@ if __name__ == "__main__":
 
     print("Loaded Environments: {}l {}".format(envSI.unwrapped.spec.id, envDA.unwrapped.spec.id))
 
-    # expertSI = torch.load(args.si)
-    # expertSI.eval()
-    # expertDA = torch.load(args.da)
-    # expertDA.eval()
-
-    ####### Delete Me! Randomly initing while I don't have trained models
     expertSI = dqn_model.DQN(envSI.observation_space.shape, envSI.action_space.n).to(device)
+    expertSI.load_state_dict(torch.load(args.si, map_location=device).state_dict())
+    expertSI_hidden = dqn_model.DQN_Hidden(envSI.observation_space.shape, envSI.action_space.n, expertSI)
     expertSI.eval()
+    expertSI_hidden.eval()
+
     expertDA = dqn_model.DQN(envSI.observation_space.shape, envSI.action_space.n).to(device)
+    expertDA.load_state_dict(torch.load(args.da, map_location=device).state_dict())
+    expertDA_hidden = dqn_model.DQN_Hidden(envSI.observation_space.shape, envSI.action_space.n, expertDA)
     expertDA.eval()
+    expertDA_hidden.eval()
 
-
-    name_to_expert = {envSI.unwrapped.spec.id : expertSI, envDA.unwrapped.spec.id : expertDA}
+    name_to_expert = {envSI.unwrapped.spec.id : [expertSI, expertSI_hidden] , envDA.unwrapped.spec.id : [expertDA, expertDA_hidden]}
 
     # This net will attempt to learn the directly from the expert models, not the games. No target net needed
-    net = dqn_model.DQN(envSI.observation_space.shape, envSI.action_space.n).to(device)
+    net = dqn_model.DQN_AM(envSI.observation_space.shape, envSI.action_space.n).to(device)
 
     # After instantiating the model shape, we actually don't need these envs (will be recreated in the parallel function)
     del envSI
@@ -329,7 +331,7 @@ if __name__ == "__main__":
 
     # Now we want two buffers, one for each game, to keep the frames separate so we can use the correct expert model
     buffer = ptan.experience.ExperienceReplayBuffer(experience_source=None, buffer_size=params['replay_size'])
-    optimizer = optim.Adam(net.parameters(), lr=params['learning_rate'])
+    optimizer = optim.Adam(net.parameters(), lr=0.001)
 
     exp_queue = mp.Queue(maxsize=PLAY_STEPS * 2)
     play_proc = mp.Process(target=play_func, args=(params, net, args.cuda, exp_queue, cuda_id))
@@ -351,7 +353,7 @@ if __name__ == "__main__":
         # print("UPDATING GRAD")
         optimizer.zero_grad()
         batch = buffer.sample(params['batch_size'])
-        loss_v = common.calc_loss_actormimic(batch, net, name_to_expert, cuda=args.cuda, cuda_async=True, cuda_id=cuda_id)
+        loss_v = common.calc_loss_actormimic(batch, net, name_to_expert, beta=args.beta, cuda=args.cuda, cuda_async=True, cuda_id=cuda_id)
         loss_v.backward()
         optimizer.step()
 
