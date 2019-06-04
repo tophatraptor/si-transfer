@@ -99,7 +99,7 @@ HYPERPARAMS = {
     'invaders-am': {
         'env_name': "SpaceInvadersNoFrameskip-v4",
         'stop_reward': 500.0,
-        'run_name': 'invaders',
+        'run_name': 'invaders-am',
         'replay_size': 3 * 10**5,
         'replay_initial': 50000,
         'target_net_sync': 10000,
@@ -114,7 +114,7 @@ HYPERPARAMS = {
     'invaders-am2': {
         'env_name': "SpaceInvadersNoFrameskip-v4",
         'stop_reward': 500.0,
-        'run_name': 'invaders',
+        'run_name': 'invaders-am2',
         'replay_size': 3 * 10**5,
         'replay_initial': 50000,
         'target_net_sync': 10000,
