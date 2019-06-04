@@ -210,7 +210,7 @@ def play_func(params, net, cuda, exp_queue, device_id):
     exp_source = ExperienceSourceFirstLast_AM([envSI, envDA], agent, gamma=params['gamma'], steps_count=1)
     exp_source_iter = iter(exp_source)
 
-    fh = open('models/{}_metadata.csv'.format(run_name), 'w')
+    fh = open('mimic_models/{}_metadata.csv'.format(run_name), 'w')
     out_csv = csv.writer(fh)
 
     frame_idx = 0
@@ -234,25 +234,25 @@ def play_func(params, net, cuda, exp_queue, device_id):
                 if game_idx and (game_idx % 500 == 0):
                     # write to disk
                     print("Saving model...")
-                    model_name = 'models/{}_{}.pth'.format(run_name, game_idx)
+                    model_name = 'mimic_models/{}_{}.pth'.format(run_name, game_idx)
                     net.to(torch.device('cpu'))
                     torch.save(net, model_name)
                     net.to(device)
                     new_row = [model_name, num_games, mean_reward, epsilon_str]
                     out_csv.writerow(new_row)
-                    np.savetxt('models/{}_reward.txt'.format(run_name), np.array(mean_rewards))
+                    np.savetxt('mimic_models/{}_reward.txt'.format(run_name), np.array(mean_rewards))
                 if game_idx == max_games:
                     break
                 game_idx += 1
 
     print("Saving final model...")
-    model_name = 'models/{}_{}.pth'.format(run_name, game_idx)
+    model_name = 'mimic_models/{}_{}.pth'.format(run_name, game_idx)
     net.to(torch.device('cpu'))
     torch.save(net, model_name)
     net.to(device)
     new_row = [model_name, num_games, mean_reward, epsilon_str]
     out_csv.writerow(new_row)
-    np.savetxt('models/{}_reward.txt'.format(run_name), np.array(mean_rewards))
+    np.savetxt('mimic_models/{}_reward.txt'.format(run_name), np.array(mean_rewards))
     # plt.figure(figsize=(16, 9))
     # plt.tight_layout()
     # plt.title('Reward vs time, {}'.format(run_name))
@@ -260,7 +260,7 @@ def play_func(params, net, cuda, exp_queue, device_id):
     # plt.ylabel('Reward')
     # ys = np.array(mean_rewards)
     # plt.plot(ys, c='r')
-    # plt.savefig('models/{}_reward.png'.format(run_name))
+    # plt.savefig('mimic_models/{}_reward.png'.format(run_name))
     # plt.close()
     fh.close()
 
@@ -294,8 +294,8 @@ if __name__ == "__main__":
     print("Using device: {}".format(device_str))
     device = torch.device(device_str)
 
-    if not os.path.exists('models'):
-        os.makedirs('models')
+    if not os.path.exists('mimic_models'):
+        os.makedirs('mimic_models')
 
     envSI = gym.make('SpaceInvadersNoFrameskip-v4')
     envSI = ptan.common.wrappers.wrap_dqn(envSI)

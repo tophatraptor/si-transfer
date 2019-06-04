@@ -56,7 +56,7 @@ def play_func(params, net, cuda, exp_queue, device_id):
     exp_source = ptan.experience.ExperienceSourceFirstLast([envSI, envDA], agent, gamma=params['gamma'], steps_count=1)
     exp_source_iter = iter(exp_source)
 
-    fh = open('models/{}_metadata.csv'.format(run_name), 'w')
+    fh = open('models_multi/{}_metadata.csv'.format(run_name), 'w')
     out_csv = csv.writer(fh)
 
     frame_idx = 0
@@ -80,25 +80,25 @@ def play_func(params, net, cuda, exp_queue, device_id):
                 if game_idx and (game_idx % save_iter == 0):
                     # write to disk
                     print("Saving model...")
-                    model_name = 'models/multi_{}_{}_{}.pth'.format(run_name, params['secondary'], game_idx)
+                    model_name = 'models_multi/{}_{}_{}.pth'.format(run_name, params['secondary'], game_idx)
                     net.to(torch.device('cpu'))
                     torch.save(net, model_name)
                     net.to(device)
                     new_row = [model_name, num_games, mean_reward, epsilon_str]
                     out_csv.writerow(new_row)
-                    np.savetxt('models/multi_{}_{}_reward.txt'.format(run_name, params['secondary']), np.array(mean_rewards))
+                    np.savetxt('models_multi/{}_{}_reward.txt'.format(run_name, params['secondary']), np.array(mean_rewards))
                 if game_idx == max_games:
                     break
                 game_idx += 1
 
     print("Saving final model...")
-    model_name = 'models/multi_{}_{}_{}.pth'.format(run_name, params['secondary'], game_idx)
+    model_name = 'models_multi/{}_{}_{}.pth'.format(run_name, params['secondary'], game_idx)
     net.to(torch.device('cpu'))
     torch.save(net, model_name)
     net.to(device)
     new_row = [model_name, num_games, mean_reward, epsilon_str]
     out_csv.writerow(new_row)
-    np.savetxt('models/multi_{}_{}_reward.txt'.format(run_name, params['secondary']), np.array(mean_rewards))
+    np.savetxt('models_multi/{}_{}_reward.txt'.format(run_name, params['secondary']), np.array(mean_rewards))
     # plt.figure(figsize=(16, 9))
     # plt.tight_layout()
     # plt.title('Reward vs time, {}'.format(run_name))
@@ -106,7 +106,7 @@ def play_func(params, net, cuda, exp_queue, device_id):
     # plt.ylabel('Reward')
     # ys = np.array(mean_rewards)
     # plt.plot(ys, c='r')
-    # plt.savefig('models/{}_reward.png'.format(run_name))
+    # plt.savefig('models_multi/{}_reward.png'.format(run_name))
     # plt.close()
     fh.close()
 
@@ -130,8 +130,8 @@ if __name__ == "__main__":
     print("Using device: {}".format(device_str))
     device = torch.device(device_str)
 
-    if not os.path.exists('models'):
-        os.makedirs('models')
+    if not os.path.exists('models_multi'):
+        os.makedirs('models_multi')
 
     envSI = gym.make('SpaceInvadersNoFrameskip-v4')
     envSI = ptan.common.wrappers.wrap_dqn(envSI)
