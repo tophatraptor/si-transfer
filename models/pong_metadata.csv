@@ -1,0 +1,7 @@
+models/pong_500.pth,500,18.96,", eps 0.02"
+models/pong_1000.pth,1000,19.3,", eps 0.02"
+models/pong_1500.pth,1500,19.36,", eps 0.02"
+models/pong_2000.pth,2000,19.4,", eps 0.02"
+models/pong_2500.pth,2500,19.24,", eps 0.02"
+models/pong_3000.pth,3000,19.31,", eps 0.02"
+models/pong_3500.pth,3500,19.53,", eps 0.02"
