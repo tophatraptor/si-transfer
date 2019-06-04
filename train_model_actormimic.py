@@ -188,7 +188,7 @@ def play_func(params, net, cuda, exp_queue, device_id):
 
     *** There is a reason that it reinitializes the envs in this function that has to do with parallelization ***
     """
-    run_name = 'actor_mimic'
+    run_name = params['run_name']
     if 'max_games' not in params:
         max_games = 16000
     else:
@@ -285,10 +285,11 @@ if __name__ == "__main__":
     parser.add_argument("--cuda_id", default=0, help="CUDA ID of device")
     parser.add_argument("--si", help="Path to space invaders master model", required=True)
     parser.add_argument('--da', help='Paths to demon attack master model', required=True)
+    parser.add_argument('--env', help='Environment to load', required=True)
     parser.add_argument('--beta', help='Balance of Policy vs Hidden Loss', default=1)
     args = parser.parse_args()
     cuda_id = args.cuda_id
-    params = common.HYPERPARAMS['invaders-am2']
+    params = common.HYPERPARAMS[args.env]
     params['batch_size'] *= PLAY_STEPS
     device_str = "cuda:{}".format(cuda_id) if args.cuda else "cpu"
     print("Using device: {}".format(device_str))

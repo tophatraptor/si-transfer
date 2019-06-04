@@ -1,4 +1,4 @@
-*.pth
+# *.pth
 .idea
 *.hdf5
 *.egg-info
