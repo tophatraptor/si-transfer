@@ -183,7 +183,6 @@ def calc_loss_actormimic(batch, net, name_to_expert, beta, cuda=False, cuda_asyn
 
         total_loss += this_loss
 
-    print(total_loss)
     return total_loss
 
 
