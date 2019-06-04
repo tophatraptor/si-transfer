@@ -103,7 +103,7 @@ HYPERPARAMS = {
         'replay_size': 3 * 10**5,
         'replay_initial': 50000,
         'target_net_sync': 10000,
-        'epsilon_frames': 20 ** 6, # model stops learning when we hit 0.1 so increase
+        'epsilon_frames': 2 * 10 ** 6, # double
         'epsilon_start': 1.0,
         'epsilon_final': 0.1,
         'learning_rate': 0.00025,
@@ -118,7 +118,7 @@ HYPERPARAMS = {
         'replay_size': 3 * 10**5,
         'replay_initial': 50000,
         'target_net_sync': 10000,
-        'epsilon_frames': 15 ** 6, # more tuning over this value because doubling it was a bit much
+        'epsilon_frames': 5 * 10 ** 6, # 11 million or so
         'epsilon_start': 1.0,
         'epsilon_final': 0.1,
         'learning_rate': 0.00025,
