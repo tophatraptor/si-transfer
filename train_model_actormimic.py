@@ -310,13 +310,13 @@ if __name__ == "__main__":
 
     expertSI = dqn_model.DQN(envSI.observation_space.shape, envSI.action_space.n).to(device)
     expertSI.load_state_dict(torch.load(args.si, map_location=device).state_dict())
-    expertSI_hidden = dqn_model.DQN_Hidden(envSI.observation_space.shape, envSI.action_space.n, expertSI)
+    expertSI_hidden = dqn_model.DQN_Hidden(envSI.observation_space.shape, envSI.action_space.n, expertSI).to(device)
     expertSI.eval()
     expertSI_hidden.eval()
 
     expertDA = dqn_model.DQN(envSI.observation_space.shape, envSI.action_space.n).to(device)
     expertDA.load_state_dict(torch.load(args.da, map_location=device).state_dict())
-    expertDA_hidden = dqn_model.DQN_Hidden(envSI.observation_space.shape, envSI.action_space.n, expertDA)
+    expertDA_hidden = dqn_model.DQN_Hidden(envSI.observation_space.shape, envSI.action_space.n, expertDA).to(device)
     expertDA.eval()
     expertDA_hidden.eval()
 
@@ -356,6 +356,3 @@ if __name__ == "__main__":
         loss_v = common.calc_loss_actormimic(batch, net, name_to_expert, beta=args.beta, cuda=args.cuda, cuda_async=True, cuda_id=cuda_id)
         loss_v.backward()
         optimizer.step()
-
-        if frame_idx % params['target_net_sync'] < PLAY_STEPS:
-            tgt_net.sync()
