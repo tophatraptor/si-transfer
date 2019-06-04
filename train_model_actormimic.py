@@ -308,15 +308,17 @@ if __name__ == "__main__":
 
     print("Loaded Environments: {}l {}".format(envSI.unwrapped.spec.id, envDA.unwrapped.spec.id))
 
-    expertSI = dqn_model.DQN(envSI.observation_space.shape, envSI.action_space.n).to(device)
+    expertSI = dqn_model.DQN(envSI.observation_space.shape, envSI.action_space.n)
     expertSI.load_state_dict(torch.load(args.si, map_location=device).state_dict())
     expertSI_hidden = dqn_model.DQN_Hidden(envSI.observation_space.shape, envSI.action_space.n, expertSI).to(device)
+    expertSI = expertSI.to(device)
     expertSI.eval()
     expertSI_hidden.eval()
 
-    expertDA = dqn_model.DQN(envSI.observation_space.shape, envSI.action_space.n).to(device)
+    expertDA = dqn_model.DQN(envSI.observation_space.shape, envSI.action_space.n)
     expertDA.load_state_dict(torch.load(args.da, map_location=device).state_dict())
     expertDA_hidden = dqn_model.DQN_Hidden(envSI.observation_space.shape, envSI.action_space.n, expertDA).to(device)
+    expertDA = expertDA.to(device)
     expertDA.eval()
     expertDA_hidden.eval()
 
