@@ -77,7 +77,7 @@ HYPERPARAMS = {
         'learning_rate':    0.00025,
         'gamma':            0.99,
         'batch_size':       32,
-        'max_games': 100000,
+        'max_games': 16000,
         'save_iter': 1000,
     },
     'demon-attack': {
@@ -93,7 +93,7 @@ HYPERPARAMS = {
         'learning_rate':    0.00025,
         'gamma':            0.99,
         'batch_size':       32,
-        'max_games': 100000,
+        'max_games': 16000,
         'save_iter': 1000,
     },
     'invaders-am': {
@@ -118,7 +118,7 @@ HYPERPARAMS = {
         'replay_size': 3 * 10**5,
         'replay_initial': 50000,
         'target_net_sync': 10000,
-        'epsilon_frames': 5 * 10 ** 6, # 11 million or so
+        'epsilon_frames': 5 * 10 ** 6,
         'epsilon_start': 1.0,
         'epsilon_final': 0.1,
         'learning_rate': 0.00025,
@@ -127,6 +127,14 @@ HYPERPARAMS = {
         'max_games': 50000
     },
 }
+
+HYPERPARAMS['assault_transfer'] = dict(HYPERPARAMS['assault'])
+HYPERPARAMS['assault_transfer']['epsilon_start'] = 0.5
+HYPERPARAMS['assault_transfer']['run_name'] = 'assault_transfer'
+
+HYPERPARAMS['assault_transfer2'] = dict(HYPERPARAMS['assault_transfer'])
+HYPERPARAMS['assault_transfer2']['epsilon_frames'] = 5 * 10**5
+HYPERPARAMS['assault_transfer']['run_name'] = 'assault_transfer2'
 
 
 def unpack_batch(batch):
